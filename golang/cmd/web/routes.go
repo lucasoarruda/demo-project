@@ -1,0 +1,47 @@
+package main
+
+import (
+	"github.com/gin-gonic/gin"
+	"github.com/penglongli/gin-metrics/ginmetrics"
+
+	docs "github.com/lucasoarruda/demo-project/golang/docs"
+	"github.com/lucasoarruda/demo-project/golang/internal/config"
+	"github.com/lucasoarruda/demo-project/golang/internal/handlers"
+	swaggerfiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
+)
+
+// @title       Swagger Autodeluge API
+// @version     1.0
+// @description This is external acess to the autodeluge-service.
+
+// @BasePath /api/v1
+func routes(app *config.AppConfig) *gin.Engine {
+	router := gin.Default()
+	router.LoadHTMLGlob("../../internal/templates/*.html.tmpl")
+	m := ginmetrics.GetMonitor()
+
+	// +optional set metric path, default /debug/metrics
+	m.SetMetricPath("/metrics")
+	// +optional set slow time, default 5s
+	m.SetSlowTime(10)
+	// +optional set request duration, default {0.1, 0.3, 1.2, 5, 10}
+	// used to p95, p99
+	m.SetDuration([]float64{0.1, 0.3, 1.2, 5, 10})
+
+	// set middleware for gin
+	m.Use(router)
+	//v1 := router.Group("/api/v1")
+	v1 := router.Group("")
+	{
+
+		// timezones
+		v1.GET("/", handlers.Repo.HomePage)
+
+		// health
+		v1.GET("/health", handlers.Repo.Status)
+	}
+	docs.SwaggerInfo.BasePath = "/api/v1"
+	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
+	return router
+}

@@ -13,3 +13,10 @@
 
 # Dependency directories (remove the comment below to include it)
 # vendor/
+.idea/demo-project.iml
+.idea/modules.xml
+.idea/vcs.xml
+.idea/webResources.xml
+golang/main
+golang/.vscode/launch.json
+golang/.vscode/settings.json

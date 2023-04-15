@@ -1,0 +1,23 @@
+basePath: /api/v1
+info:
+  contact: {}
+  description: This is external acess to the autodeluge-service.
+  title: Swagger Autodeluge API
+  version: "1.0"
+paths:
+  /health:
+    get:
+      consumes:
+      - application/json
+      description: do Health Check
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      summary: Health Check
+      tags:
+      - Health
+swagger: "2.0"
