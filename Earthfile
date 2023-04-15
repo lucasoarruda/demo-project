@@ -27,6 +27,7 @@ compile:
     SAVE ARTIFACT compile/demo-project /demo-project AS LOCAL compile/demo-project
 
 docker:
+    ARG EARTHLY_TARGET_TAG_DOCKER
     ARG TARGETPLATFORM
     ARG TARGETARCH
     ARG TARGETVARIANT
@@ -38,4 +39,4 @@ docker:
         (+compile/demo-project --GOARCH=$TARGETARCH --VARIANT=$TARGETVARIANT) /demo-project
     ENV GIN_MODE=release
     CMD ["/demo-project"]
-    SAVE IMAGE --push ghcr.io/lucasoarruda/demo-project:latest
+    SAVE IMAGE --push ghcr.io/lucasoarruda/demo-project:$EARTHLY_TARGET_TAG_DOCKER
