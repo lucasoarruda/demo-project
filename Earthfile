@@ -1,4 +1,4 @@
-VERSION 0.6
+VERSION 0.7
 all:
     BUILD --platform=linux/amd64 --platform=linux/arm64 +docker
 amd64:
@@ -41,4 +41,4 @@ docker:
         (+compile/demo-project --GOARCH=$TARGETARCH --VARIANT=$TARGETVARIANT) /demo-project
     ENV GIN_MODE=release
     CMD ["/demo-project"]
-    SAVE IMAGE --push registry.gitlab.com/loatecs/personal/deluge-automatic-go:demo-project-latest
+    SAVE IMAGE --push ghcr.io/lucasoarruda/demo-project:latest
