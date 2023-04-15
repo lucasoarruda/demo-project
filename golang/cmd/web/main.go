@@ -22,13 +22,15 @@ var (
 )
 
 func main() {
-	app.BuildInfo = fmt.Sprintf("Version: %s || \n BuildTime: %s || \n GitCommit: %s", Version, BuildTime, GitCommit)
+	app.BuildInfo = fmt.Sprintf("\n Version: %s || \n BuildTime: %s || \n GitCommit: %s", Version, BuildTime, GitCommit)
 	if os.Getenv("GO_PORT") == "" {
 		app.Port = ":8000"
 	} else {
 		app.Port = os.Getenv("GO_PORT")
 	}
 	log.Println(app.BuildInfo)
+	fmt.Println("Listening on port", app.Port)
+
 	router := routes(&app)
 	s := &http.Server{
 		Addr:         app.Port,
@@ -41,7 +43,6 @@ func main() {
 	if err != nil {
 		return
 	}
-	fmt.Println("Listening on port", app.Port)
 	_, err = fmt.Scanln()
 	if err != nil {
 		return

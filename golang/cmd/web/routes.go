@@ -1,8 +1,11 @@
 package main
 
 import (
+	"embed"
 	"github.com/gin-gonic/gin"
 	"github.com/penglongli/gin-metrics/ginmetrics"
+	"html/template"
+	"log"
 
 	docs "github.com/lucasoarruda/demo-project/golang/docs"
 	"github.com/lucasoarruda/demo-project/golang/internal/config"
@@ -15,10 +18,20 @@ import (
 // @version     1.0
 // @description This is external acess to the autodeluge-service.
 
+//go:embed templates/*.html.tmpl
+
+var f embed.FS
+
 // @BasePath /api/v1
 func routes(app *config.AppConfig) *gin.Engine {
 	router := gin.Default()
-	router.LoadHTMLGlob("internal/templates/*.html.tmpl")
+	tmpl, err := template.ParseFS(f, "templates/*.html.tmpl")
+	if err != nil {
+		log.Fatal("Error loading templates:", err)
+	}
+
+	// Set the HTML template for the router
+	router.SetHTMLTemplate(tmpl)
 	m := ginmetrics.GetMonitor()
 
 	// +optional set metric path, default /debug/metrics
