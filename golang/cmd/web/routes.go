@@ -18,7 +18,7 @@ import (
 // @BasePath /api/v1
 func routes(app *config.AppConfig) *gin.Engine {
 	router := gin.Default()
-	router.LoadHTMLGlob("../../internal/templates/*.html.tmpl")
+	router.LoadHTMLGlob("internal/templates/*.html.tmpl")
 	m := ginmetrics.GetMonitor()
 
 	// +optional set metric path, default /debug/metrics
@@ -31,6 +31,7 @@ func routes(app *config.AppConfig) *gin.Engine {
 
 	// set middleware for gin
 	m.Use(router)
+	handlers.Repo = &handlers.Repository{App: app}
 	//v1 := router.Group("/api/v1")
 	v1 := router.Group("")
 	{

@@ -30,6 +30,7 @@ func (m *Repository) Status(ctx *gin.Context) {
 
 func (m *Repository) HomePage(ctx *gin.Context) {
 	ctx.HTML(http.StatusOK, "homepage.html.tmpl", gin.H{
-		"title": "Main website",
+		"title": "Clocks - Timezone Demo",
+		"info":  m.App.GetBuildInfo(),
 	})
 }
