@@ -8,9 +8,7 @@ deps:
     WORKDIR /build
     COPY . ./
     RUN apk add --no-cache git
-    RUN ls -alth
     WORKDIR /build/golang
-    RUN ls -alth
     RUN go mod tidy
     RUN go mod download
     RUN go get -u github.com/swaggo/swag/cmd/swag
@@ -22,7 +20,6 @@ compile:
     ARG GOOS=linux
     ARG GOARCH=amd64
     ARG VARIANT
-    RUN git rev-parse --short HEAD
     RUN GOARM=${VARIANT#v} CGO_ENABLED=0 go build \
         --ldflags "-X 'main.Version=v0.0.1' -X 'main.BuildTime=$(date "+%H:%M:%S--%d/%m/%Y")' -X 'main.GitCommit=$(git rev-parse --short HEAD)'" \
         -installsuffix 'static' \
