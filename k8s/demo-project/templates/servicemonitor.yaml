@@ -1,3 +1,5 @@
+{{- define "demo-project.serviceMonitor" -}}
+{{- if and .Values.serviceMonitor.enabled .Values.service.enabled }}
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
@@ -12,3 +14,5 @@ spec:
   selector:
     matchLabels:
       {{- include "demo-project.selectorLabels" . | nindent 4 }}
+{{- end }}
+{{- end }}
