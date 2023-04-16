@@ -1,6 +1,6 @@
 # Demo Project
 ## Project Description
-This project aims to display 3 clocks with different timezones in HTML format using a Golang application. It also provides metrics at /metrics and a health check at /health in JSON format. Additionally, it displays build time information on the frontend.
+This project aims to display 3 clocks with different timezones in HTML format using a Golang application. It also provides metrics at /metrics, health check at /health in JSON format and a swagger on /swagger/index.html. Additionally, it displays build time information on the frontend.
 
 The project uses Earthly as a CI tool for building container images for AMD64 and ARM64 and pushing them to GitHub package (ghcr.io). It also enables security scans using Trivy, Snyk, and GitHub.
 
@@ -25,6 +25,7 @@ This project demonstrates how to build and deploy a Golang application to Kubern
 - The application will display 3 clocks with different timezones in HTML format.
 - The application will expose metrics on /metrics.
 - The application will have a health check on /health that returns a 200 status code in JSON format.
+- The application will expose swagger on /swagger/index.html
 - The application will display build time information on the frontend.
 
 ## Continuous Integration (CI)
