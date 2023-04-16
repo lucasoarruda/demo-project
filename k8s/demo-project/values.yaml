@@ -46,13 +46,12 @@ serviceMonitor:
 
 ingress:
   enabled: true
-  #className: "kong"
+  className: "kong"
   annotations:
     cert-manager.io/cluster-issuer: letsencrypt-prod
     konghq.com/preserve-host: "true"
     konghq.com/protocols: https
     konghq.com/https-redirect-status-code: "308"
-    alb.ingress.kubernetes.io/scheme: internet-facing
   hosts:
     - host: demo-project.apps.oc.loatecs.com
       paths:
@@ -62,6 +61,15 @@ ingress:
     - secretName: demo-project-tls
       hosts:
         - demo-project.apps.oc.loatecs.com
+  aws:
+    enabled: false
+    ingressClass: alb
+    annotations:
+      alb.ingress.kubernetes.io/scheme: internet-facing
+    hosts:
+      - paths:
+        - path: /
+          pathType: Exact
 
 resources:
   limits:
