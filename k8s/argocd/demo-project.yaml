@@ -1,0 +1,14 @@
+project: default
+source:
+  repoURL: 'https://github.com/lucasoarruda/demo-project/'
+  path: k8s/demo-project
+  targetRevision: develop
+destination:
+  namespace: demo-project
+  name: demo-project
+syncPolicy:
+  automated:
+    prune: true
+    selfHeal: true
+  syncOptions:
+    - CreateNamespace=true

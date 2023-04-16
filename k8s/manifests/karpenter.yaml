@@ -28,9 +28,11 @@ spec:
     enabled: true
   #ttlSecondsAfterEmpty: 60 # mutual exclusive with consolitation
   requirements:
+  ### to help stay on free tier (t2.micro), remove to improve node selection
     - key: node.kubernetes.io/instance-type
       operator: In
       values: ["t2.micro"]
+  #### to help stay on free tier (t2.micro), remove to improve node selection      
     - key: "karpenter.k8s.aws/instance-category"
       operator: In
       values: ["t", "m"]
