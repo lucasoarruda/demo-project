@@ -3,7 +3,9 @@ package main
 import (
 	"flag"
 	"fmt"
+	"log"
 	"net/http"
+	"os"
 	"sync"
 	"time"
 )
@@ -12,8 +14,15 @@ func main() {
 	// Parse command-line arguments
 	url := flag.String("url", "https://demo-project.example.com/", "The URL to make requests to")
 	concurrency := flag.Int("concurrency", 10, "Number of concurrent requests to make")
-	numRequests := flag.Int("num-requests", 10, "Number of requests to make per goroutine")
+	numRequests := flag.Int("num-requests", 10000, "Number of requests to make per goroutine")
 	flag.Parse()
+
+	// Print usage if no arguments are provided
+	if flag.NFlag() == 0 {
+		fmt.Fprintf(os.Stderr, "Usage: %s [OPTIONS]\n\nOptions:\n", os.Args[0])
+		flag.PrintDefaults()
+		os.Exit(1)
+	}
 
 	// WaitGroup to synchronize goroutines
 	wg := sync.WaitGroup{}
@@ -52,14 +61,14 @@ func main() {
 	for r := range responses {
 		total += r
 		count++
-		if count%10000 == 0 {
-			fmt.Printf("Response time at count %d: %v\n", count, r)
+		if count%1000 == 0 {
+			log.Printf("Response time at count %d: %v\n", count, r)
 		}
 	}
 
 	// Print summary statistics
-	fmt.Printf("\n--- Results ---\n")
-	fmt.Printf("Requests made: %d\n", count)
-	fmt.Printf("Total time taken: %v\n", total)
-	fmt.Printf("Average response time: %v\n", total/time.Duration(count))
+	log.Println("--- Results ---")
+	log.Printf("Requests made: %d\n", count)
+	log.Printf("Total time taken: %v\n", total)
+	log.Printf("Average response time: %v\n", total/time.Duration(count))
 }
