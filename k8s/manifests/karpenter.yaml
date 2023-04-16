@@ -50,7 +50,7 @@ spec:
   providerRef:
     name: karpenter-default
 
-  ttlSecondsUntilExpired: 3600
+  ttlSecondsUntilExpired: 7200
   
   # Priority given to the provisioner when the scheduler considers which provisioner
   # to select. Higher weights indicate higher priority when comparing provisioners.
