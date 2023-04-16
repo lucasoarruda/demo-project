@@ -63,7 +63,7 @@ ingress:
         - demo-project.apps.oc.loatecs.com
   aws:
     enabled: false
-    ingressClass: alb
+    className: alb
     annotations:
       alb.ingress.kubernetes.io/scheme: internet-facing
     hosts:
