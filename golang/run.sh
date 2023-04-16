@@ -1,1 +1,1 @@
-go build --ldflags "-X 'main.Version=v0.0.2' -X 'main.BuildTime=$(date "+%H:%M:%S--%d/%m/%Y")' -X 'main.GitCommit=$(git rev-parse HEAD)'" cmd/web/*.go
+go build --ldflags "-X 'main.Version=v0.0.3' -X 'main.BuildTime=$(date "+%H:%M:%S--%d/%m/%Y")' -X 'main.GitCommit=$(git rev-parse --short HEAD)'" cmd/web/*.go

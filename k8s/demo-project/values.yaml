@@ -2,6 +2,7 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 # helm upgrade -i demo-project -n demo-project --create-namespace .
+# helm template demo-project -n demo-project --create-namespace .
 replicaCount: 3
 
 image:
@@ -40,6 +41,9 @@ service:
   type: ClusterIP
   port: 8000
 
+serviceMonitor:
+  enabled: false
+
 ingress:
   enabled: true
   className: "kong"
@@ -49,14 +53,23 @@ ingress:
     konghq.com/protocols: https
     konghq.com/https-redirect-status-code: "308"
   hosts:
-    - host: demo-project.apps.oc.loatecs.com
+    - host: demo-project.apps.aws.loatecs.com
       paths:
         - path: /
-          pathType: ImplementationSpecific
+          pathType: Exact
   tls:
     - secretName: demo-project-tls
       hosts:
-        - demo-project.apps.oc.loatecs.com
+        - demo-project.apps.aws.loatecs.com
+  aws:
+    enabled: false
+    className: alb
+    annotations:
+      alb.ingress.kubernetes.io/scheme: internet-facing
+    hosts:
+      - paths:
+        - path: /
+          pathType: Exact
 
 resources:
   limits:

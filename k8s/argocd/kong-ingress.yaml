@@ -1,0 +1,80 @@
+project: default
+source:
+  repoURL: 'https://charts.konghq.com'
+  targetRevision: '*'
+  helm:
+    parameters:
+      - name: proxy.loadBalancerClass
+        value: service.k8s.aws/nlb
+    values: |-
+      image:
+        repository: kong
+        tag: "latest"
+      podDisruptionBudget:
+        enabled: true
+      podAnnotations:
+        linkerd.io/inject: ingress
+      deployment:
+        daemonset: false
+      admin:
+        enabled: true
+        type: ClusterIP
+        tls:
+          parameters: []
+        http:
+          enabled: true
+        labels:
+          enable-metrics: "false"
+          prometheus.io/scrape: "true"
+          prometheus.io/port: kong-admin
+        annotations:
+          prometheus.io/scrape: "true"
+          prometheus.io/port: kong-admin
+
+      serviceMonitor:
+        enabled: false
+        labels: 
+          release: promstack
+
+      manager:
+        enabled: false
+        type: LoadBalancer
+
+        http:
+          enabled: true
+          #parameters: []
+
+      enterprise:
+        enabled: false
+        vitals:
+          enabled: false
+        portal:
+          enabled: false
+        rbac:
+          enabled: true
+        smtp:
+          enabled: false
+
+      portal:
+        enabled: false
+
+      portalapi:
+        enabled: false
+        
+      proxy:
+        annotations:
+          linkerd.io/inject: enabled
+          service.beta.kubernetes.io/aws-load-balancer-scheme: internet-facing
+      ingressController:
+        installCRDs: false
+        enabled: true
+        env:
+          GatewayAlpha: true
+          feature_gates: GatewayAlpha=true
+  chart: kong
+destination:
+  namespace: kong
+  name: demo-project
+syncPolicy:
+  syncOptions:
+    - CreateNamespace=true

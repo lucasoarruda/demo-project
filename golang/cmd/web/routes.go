@@ -2,10 +2,11 @@ package main
 
 import (
 	"embed"
-	"github.com/gin-gonic/gin"
-	"github.com/penglongli/gin-metrics/ginmetrics"
 	"html/template"
 	"log"
+
+	"github.com/gin-gonic/gin"
+	"github.com/penglongli/gin-metrics/ginmetrics"
 
 	docs "github.com/lucasoarruda/demo-project/golang/docs"
 	"github.com/lucasoarruda/demo-project/golang/internal/config"
@@ -55,7 +56,7 @@ func routes(app *config.AppConfig) *gin.Engine {
 		// health
 		v1.GET("/health", handlers.Repo.Status)
 	}
-	docs.SwaggerInfo.BasePath = "/api/v1"
+	docs.SwaggerInfo.BasePath = "/"
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
 	return router
 }
