@@ -52,6 +52,7 @@ ingress:
     konghq.com/preserve-host: "true"
     konghq.com/protocols: https
     konghq.com/https-redirect-status-code: "308"
+    alb.ingress.kubernetes.io/scheme: internet-facing
   hosts:
     - host: demo-project.apps.oc.loatecs.com
       paths:
