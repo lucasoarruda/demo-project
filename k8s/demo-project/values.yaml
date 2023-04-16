@@ -53,14 +53,14 @@ ingress:
     konghq.com/protocols: https
     konghq.com/https-redirect-status-code: "308"
   hosts:
-    - host: demo-project.apps.oc.loatecs.com
+    - host: demo-project.apps.aws.loatecs.com
       paths:
         - path: /
-          pathType: ImplementationSpecific
+          pathType: Exact
   tls:
     - secretName: demo-project-tls
       hosts:
-        - demo-project.apps.oc.loatecs.com
+        - demo-project.apps.aws.loatecs.com
   aws:
     enabled: false
     className: alb
