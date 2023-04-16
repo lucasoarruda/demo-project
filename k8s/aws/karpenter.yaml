@@ -28,6 +28,9 @@ spec:
     enabled: true
   #ttlSecondsAfterEmpty: 60 # mutual exclusive with consolitation
   requirements:
+    - key: node.kubernetes.io/instance-type
+      operator: In
+      values: ["t2.micro"]
     - key: "karpenter.k8s.aws/instance-category"
       operator: In
       values: ["t", "m"]
