@@ -52,15 +52,15 @@ module "eks_blueprints" {
   managed_node_groups = {
     managed = {
       node_group_name = local.node_group_name
-      instance_types  = ["t4g.micro"]
+      instance_types  = ["t2.micro"]
       capacity_type  = "SPOT"
-      ami_type       = "BOTTLEROCKET_ARM_64"
+      #ami_type       = "BOTTLEROCKET_x86_64"
       launch_template_os     = "bottlerocket"
       disk_size      = 20
       subnet_ids      = module.vpc.private_subnets
-      desired_capacity = 2
+      desired_capacity = 3
       min_size         = 1
-      max_size         = 2
+      max_size         = 3
     }
   }
 
