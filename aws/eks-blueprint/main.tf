@@ -136,17 +136,6 @@ module "kubernetes_addons" {
   enable_karpenter = true
   karpenter_node_iam_instance_profile        = module.karpenter.instance_profile_name
   karpenter_enable_spot_termination_handling = true
-  # karpenter_helm_config = {
-  #   name                       = "karpenter"
-  #   chart                      = "karpenter"
-  #   repository                 = "https://charts.karpenter.sh"
-  #   version                    = "v0.16.3"
-  #   namespace                  = "karpenter"
-  #   values = [templatefile("${path.module}/values.yaml", {
-  #        eks_cluster_id       = var.eks_cluster_id,
-  #        eks_cluster_endpoint = var.eks_cluster_endpoint,
-  #   })]
-  # }
 
   enable_cluster_autoscaler = false
   enable_aws_load_balancer_controller  = true
@@ -162,6 +151,7 @@ module "kubernetes_addons" {
 module "karpenter" {
   source  = "terraform-aws-modules/eks/aws//modules/karpenter"
   version = "~> 19.9"
+  
 
   cluster_name           = local.name
   create_irsa            = false # IRSA will be created by the kubernetes-addons module
