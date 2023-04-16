@@ -46,7 +46,7 @@ serviceMonitor:
 
 ingress:
   enabled: true
-  className: "kong"
+  #className: "kong"
   annotations:
     cert-manager.io/cluster-issuer: letsencrypt-prod
     konghq.com/preserve-host: "true"
