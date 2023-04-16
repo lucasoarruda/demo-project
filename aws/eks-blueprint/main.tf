@@ -58,9 +58,9 @@ module "eks_blueprints" {
       launch_template_os     = "bottlerocket"
       disk_size      = 20
       subnet_ids      = module.vpc.private_subnets
-      desired_capacity = 1
+      desired_capacity = 2
       min_size         = 1
-      max_size         = 3
+      max_size         = 2
     }
   }
 
@@ -124,6 +124,9 @@ module "kubernetes_addons" {
   enable_amazon_eks_coredns             = true
   enable_amazon_eks_kube_proxy          = true
   enable_amazon_eks_vpc_cni             = true
+  amazon_eks_vpc_cni_config = {
+    addon_version            = "v1.12.6-eksbuild.1"
+    }
 
   #---------------------------------------------------------------
   # ADD-ONS - You can add additional addons here
