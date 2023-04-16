@@ -1,4 +1,4 @@
-VERSION 0.6
+VERSION 0.7
 all:
     BUILD --platform=linux/amd64 --platform=linux/arm64 +docker
 amd64:
@@ -8,9 +8,7 @@ deps:
     WORKDIR /build
     COPY . ./
     RUN apk add --no-cache git
-    RUN ls -alth
     WORKDIR /build/golang
-    RUN ls -alth
     RUN go mod tidy
     RUN go mod download
     RUN go get -u github.com/swaggo/swag/cmd/swag
@@ -22,14 +20,14 @@ compile:
     ARG GOOS=linux
     ARG GOARCH=amd64
     ARG VARIANT
-    RUN git rev-parse --short HEAD
     RUN GOARM=${VARIANT#v} CGO_ENABLED=0 go build \
-        --ldflags "-X 'main.Version=v0.0.1' -X 'main.BuildTime=$(date "+%H:%M:%S--%d/%m/%Y")' -X 'main.GitCommit=$(git rev-parse --short HEAD)'" \
+        --ldflags "-X 'main.Version=v0.0.2' -X 'main.BuildTime=$(date "+%H:%M:%S--%d/%m/%Y")' -X 'main.GitCommit=$(git rev-parse --short HEAD)'" \
         -installsuffix 'static' \
         -o compile/demo-project cmd/web/*.go
     SAVE ARTIFACT compile/demo-project /demo-project AS LOCAL compile/demo-project
 
 docker:
+    ARG EARTHLY_TARGET_TAG_DOCKER
     ARG TARGETPLATFORM
     ARG TARGETARCH
     ARG TARGETVARIANT
@@ -41,4 +39,4 @@ docker:
         (+compile/demo-project --GOARCH=$TARGETARCH --VARIANT=$TARGETVARIANT) /demo-project
     ENV GIN_MODE=release
     CMD ["/demo-project"]
-    SAVE IMAGE --push registry.gitlab.com/loatecs/personal/deluge-automatic-go:demo-project-latest
+    SAVE IMAGE --push ghcr.io/lucasoarruda/demo-project:$EARTHLY_TARGET_TAG_DOCKER

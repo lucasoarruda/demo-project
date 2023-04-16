@@ -1,0 +1,14 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "demo-project.fullname" . }}
+  labels:
+    {{- include "demo-project.labels" . | nindent 4 }}
+spec:
+  endpoints:
+  - interval: 30s
+    port: http
+    scrapeTimeout: 29s
+  selector:
+    matchLabels:
+      {{- include "demo-project.selectorLabels" . | nindent 4 }}

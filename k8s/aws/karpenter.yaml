@@ -1,0 +1,61 @@
+apiVersion: karpenter.k8s.aws/v1alpha1
+kind: AWSNodeTemplate
+metadata:
+  name: karpenter-default
+spec:
+  instanceProfile: eks-blueprint-managed-ondemand
+  amiFamily: Bottlerocket
+  subnetSelector:
+    kubernetes.io/cluster/eks-blueprint: '*'
+    kubernetes.io/role/internal-elb: '1' # to select only private subnets
+  securityGroupSelector:
+    aws:eks:cluster-name: 'eks-blueprint' # Choose only security groups of nodes
+  tags:
+    karpenter.sh/cluster_name: eks-blueprint
+    karpenter.sh/provisioner: default
+  metadataOptions:
+    httpEndpoint: enabled
+    httpProtocolIPv6: disabled
+    httpPutResponseHopLimit: 2
+    httpTokens: required
+---
+apiVersion: karpenter.sh/v1alpha5
+kind: Provisioner
+metadata:
+  name: default
+spec:
+  consolidation:
+    enabled: true
+  #ttlSecondsAfterEmpty: 60 # mutual exclusive with consolitation
+  requirements:
+    - key: "karpenter.k8s.aws/instance-category"
+      operator: In
+      values: ["t", "m"]
+    - key: "karpenter.k8s.aws/instance-cpu"
+      operator: In
+      values: ["1", "2"]
+    - key: 'kubernetes.io/arch'
+      operator: In
+      values: ['amd64', 'arm64']
+    - key: karpenter.sh/capacity-type
+      operator: In
+      values: ["spot"]
+    - key: kubernetes.io/os
+      operator: In
+      values:
+        - linux
+  providerRef:
+    name: karpenter-default
+
+  ttlSecondsUntilExpired: 3600
+  
+  # Priority given to the provisioner when the scheduler considers which provisioner
+  # to select. Higher weights indicate higher priority when comparing provisioners.
+  # Specifying no weight is equivalent to specifying a weight of 0.
+  weight: 1
+  limits:
+    resources:
+      cpu: '10'
+  labels:
+    team: default
+    type: karpenter
