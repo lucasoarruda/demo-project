@@ -1,4 +1,8 @@
 # Demo Project
+[![Build and Push](https://github.com/lucasoarruda/demo-project/actions/workflows/ci.yml/badge.svg)](https://github.com/lucasoarruda/demo-project/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/lucasoarruda/demo-project/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/lucasoarruda/demo-project/actions/workflows/github-code-scanning/codeql)
+[![Snyk Security](https://github.com/lucasoarruda/demo-project/actions/workflows/snyk-security.yml/badge.svg)](https://github.com/lucasoarruda/demo-project/actions/workflows/snyk-security.yml)
+[![Trivy](https://github.com/lucasoarruda/demo-project/actions/workflows/trivy.yml/badge.svg)](https://github.com/lucasoarruda/demo-project/actions/workflows/trivy.yml)
 ## Project Description
 This project aims to display 3 clocks with different timezones in HTML format using a Golang application. It also provides metrics at /metrics, health check at /health in JSON format and a swagger on /swagger/index.html. Additionally, it displays build time information on the frontend.
 
