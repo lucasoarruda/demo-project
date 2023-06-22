@@ -40,8 +40,10 @@ securityContext:
 service:
   type: ClusterIP
   port: 8000
+  annotations:
+    ingress.kubernetes.io/service-upstream: "true"
 
-serviceMonitor:
+servicemonitor:
   enabled: false
 
 ingress:
@@ -56,7 +58,7 @@ ingress:
     - host: demo-project.apps.aws.loatecs.com
       paths:
         - path: /
-          pathType: Exact
+          pathType: Prefix
   tls:
     - secretName: demo-project-tls
       hosts:
@@ -69,7 +71,7 @@ ingress:
     hosts:
       - paths:
         - path: /
-          pathType: Exact
+          pathType: Prefix
 
 resources:
   limits:
