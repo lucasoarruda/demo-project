@@ -1,10 +1,13 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/lucasoarruda/demo-project/golang/internal/config"
@@ -39,12 +42,26 @@ func main() {
 		WriteTimeout: 120 * time.Second,
 		//MaxHeaderBytes: 1 << 20,
 	}
-	err := s.ListenAndServe()
-	if err != nil {
-		return
+	// Start the HTTP server in a goroutine
+	go func() {
+		if err := s.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			fmt.Printf("Error starting server: %s\n", err)
+		}
+	}()
+
+	// Listen for the SIGINT signal and shut down the server
+	sigint := make(chan os.Signal, 1)
+	signal.Notify(sigint, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
+	<-sigint
+
+	fmt.Println("Shutting down server...")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	if err := s.Shutdown(ctx); err != nil {
+		fmt.Printf("Error shutting down server: %s\n", err)
 	}
-	_, err = fmt.Scanln()
-	if err != nil {
-		return
-	}
+
+	fmt.Println("Server shut down.")
 }
