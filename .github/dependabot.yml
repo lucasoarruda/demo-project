@@ -5,7 +5,23 @@
 
 version: 2
 updates:
-  - package-ecosystem: "" # See documentation for possible values
-    directory: "/" # Location of package manifests
+  - package-ecosystem: "gomod" # See documentation for possible values
+    directory: "/golang" # Location of package manifests
     schedule:
-      interval: "daily"
+      interval: "weekly"
+    target-branch: "develop"
+  - package-ecosystem: "gomod" # See documentation for possible values
+    directory: "/golang" # Location of package manifests
+    schedule:
+      interval: "weekly"
+    target-branch: "main"
+  - package-ecosystem: "terraform" # See documentation for possible values
+    directory: "/aws" # Location of package manifests
+    schedule:
+      interval: "weekly"
+    target-branch: "develop"
+  - package-ecosystem: "terraform" # See documentation for possible values
+    directory: "/aws" # Location of package manifests
+    schedule:
+      interval: "weekly"
+    target-branch: "main"    
