@@ -48,12 +48,10 @@ servicemonitor:
 
 ingress:
   enabled: true
-  className: "kong"
+  className: "apisix"
   annotations:
     cert-manager.io/cluster-issuer: letsencrypt-prod
-    konghq.com/preserve-host: "true"
-    konghq.com/protocols: https
-    konghq.com/https-redirect-status-code: "308"
+    k8s.apisix.apache.org/http-to-https: "true"
   hosts:
     - host: demo-project.apps.aws.loatecs.com
       paths:
