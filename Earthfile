@@ -21,7 +21,7 @@ compile:
     ARG GOARCH=amd64
     ARG VARIANT
     RUN GOARM=${VARIANT#v} CGO_ENABLED=0 go build \
-        --ldflags "-X 'main.Version=v0.0.3' -X 'main.BuildTime=$(date "+%H:%M:%S--%d/%m/%Y")' -X 'main.GitCommit=$(git rev-parse --short HEAD)'" \
+        --ldflags "-X 'main.Version=v0.0.4' -X 'main.BuildTime=$(date "+%H:%M:%S--%d/%m/%Y")' -X 'main.GitCommit=$(git rev-parse --short HEAD)'" \
         -installsuffix 'static' \
         -o compile/demo-project cmd/web/*.go
     SAVE ARTIFACT compile/demo-project /demo-project AS LOCAL compile/demo-project
