@@ -53,14 +53,14 @@ ingress:
     cert-manager.io/cluster-issuer: letsencrypt-prod
     k8s.apisix.apache.org/http-to-https: "true"
   hosts:
-    - host: demo-project.apps.aws.loatecs.com
+    - host: demo-project.apps.loatecs.com
       paths:
         - path: /
           pathType: Prefix
   tls:
     - secretName: demo-project-tls
       hosts:
-        - demo-project.apps.aws.loatecs.com
+        - demo-project.apps.loatecs.com
   aws:
     enabled: false
     className: alb
