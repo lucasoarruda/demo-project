@@ -48,10 +48,11 @@ servicemonitor:
 
 ingress:
   enabled: true
-  className: "apisix"
+  className: "cilium"
   annotations:
     cert-manager.io/cluster-issuer: letsencrypt-prod
     k8s.apisix.apache.org/http-to-https: "true"
+    ingress.cilium.io/force-https: "enabled"
   hosts:
     - host: demo-project.apps.loatecs.com
       paths:
