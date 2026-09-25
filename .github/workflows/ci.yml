@@ -4,7 +4,7 @@ on:
   push:
     branches: [ develop ]
   pull_request:
-    branches: [ main, develop ]
+    branches: [ develop ]
 
 permissions:
   contents: read
@@ -126,3 +126,50 @@ jobs:
       with:
         sarif_file: 'trivy-results.sarif'
         category: trivy-image
+
+  # GitOps deploy: pin the image this run built and scanned in the Helm chart,
+  # so ArgoCD (which tracks develop with automated sync) rolls it out. A
+  # floating :develop tag never changes in git, so ArgoCD would never notice.
+  deploy:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
+    needs: [build, trivy]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # commit the new tag to develop
+    concurrency:
+      group: deploy-develop
+      cancel-in-progress: false
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        ref: develop
+        fetch-depth: 50
+    - name: Pin image tag in the Helm chart
+      run: |
+        TAG="sha-${GITHUB_SHA::7}" # same tag docker/metadata-action pushed
+        git config user.name "github-actions[bot]"
+        git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        for attempt in 1 2 3; do
+          # Never roll back: if develop has a newer (non-deploy) commit, its
+          # own run deploys it.
+          latest=$(git log --format=%H --invert-grep --grep='^deploy: ' -1)
+          if [ "$latest" != "$GITHUB_SHA" ]; then
+            echo "develop moved on to $latest; skipping deploy of $TAG."
+            exit 0
+          fi
+          sed -i -E "s|^(  tag: ).*|\1\"${TAG}\"|" k8s/demo-project/values.yaml
+          if git diff --quiet; then
+            echo "values.yaml already pins $TAG."
+            exit 0
+          fi
+          git commit -qam "deploy: ${TAG} [skip ci]"
+          # Pushes made with GITHUB_TOKEN do not trigger workflows, so no loop.
+          if git push origin HEAD:develop; then
+            echo "Pinned $TAG; ArgoCD will sync it."
+            exit 0
+          fi
+          git reset -q --hard HEAD~1
+          git pull -q --rebase origin develop
+        done
+        echo "::error::could not push the deploy commit after 3 attempts"
+        exit 1
