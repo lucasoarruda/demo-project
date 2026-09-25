@@ -150,7 +150,7 @@ module "kubernetes_addons" {
 # Creates Karpenter native node termination handler resources and IAM instance profile
 module "karpenter" {
   source  = "terraform-aws-modules/eks/aws//modules/karpenter"
-  version = "~> 19.9"
+  version = "~> 21.25"
   
 
   cluster_name           = local.name
