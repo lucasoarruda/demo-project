@@ -9,7 +9,7 @@ image:
   repository: ghcr.io/lucasoarruda/demo-project
   pullPolicy: Always
   # Overrides the image tag whose default is the chart appVersion.
-  tag: "sha-6c7dcb3"
+  tag: "sha-137945b"
 
 imagePullSecrets: []
 nameOverride: ""
