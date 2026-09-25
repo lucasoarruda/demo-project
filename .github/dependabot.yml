@@ -25,3 +25,13 @@ updates:
     schedule:
       interval: "weekly"
     target-branch: "main"    
+  - package-ecosystem: "gomod"
+    directory: "/loadtest"
+    schedule:
+      interval: "weekly"
+    target-branch: "develop"
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    target-branch: "develop"

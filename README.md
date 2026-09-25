@@ -35,7 +35,7 @@ This project demonstrates how to build and deploy a Golang application to Kubern
 ## Continuous Integration (CI)
 
 - The project will use Earthly to build container images for AMD64 and ARM64 architectures and push them to GitHub Packages (ghcr.io).
-- The runtime image for the container will use Google's Golang distroless image.
+- Container images are built on Wolfi: `cgr.dev/chainguard/go` for the build stage and the distroless `cgr.dev/chainguard/static` (non-root) for runtime.
 - Security scans will be enabled using Trivy, Snyk, and GitHub.
 
 ## Continuous Deployment (CD) to Kubernetes (K8S)

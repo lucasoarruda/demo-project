@@ -16,8 +16,8 @@ jobs:
     steps:
     - uses: earthly/actions/setup-earthly@v1
       with:
-        version: latest
-    - uses: actions/checkout@v3
+        version: v0.8.16
+    - uses: actions/checkout@v7
     - name: Put back the git branch into git (Earthly uses it for tagging)
       run: |
         branch=""
@@ -28,7 +28,7 @@ jobs:
         fi
         git checkout -b "$branch" || true
     - name: Log in to the Container registry
-      uses: docker/login-action@v2
+      uses: docker/login-action@v4
       with:
         registry: ${{ env.REGISTRY }}
         username: ${{ github.actor }}
