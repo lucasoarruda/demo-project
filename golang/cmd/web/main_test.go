@@ -1,41 +1,54 @@
 package main
 
 import (
-	"github.com/lucasoarruda/demo-project/golang/internal/config"
 	"net/http"
 	"net/http/httptest"
-	"os"
+	"sync"
 	"testing"
 	"time"
+
+	"github.com/lucasoarruda/demo-project/golang/internal/config"
 )
 
+var startMain sync.Once
+
+// TestMainFunction starts main() once (it blocks until SIGINT, so it cannot be
+// started twice without racing on the global app config) and verifies that it
+// honours GO_PORT and serves the homepage.
 func TestMainFunction(t *testing.T) {
-	// Save the current value of GO_PORT
-	oldPort := os.Getenv("GO_PORT")
+	t.Setenv("GO_PORT", ":18080")
 
-	// Set GO_PORT to a test value
-	os.Setenv("GO_PORT", ":8080")
+	startMain.Do(func() { go main() })
 
-	// Call the main function
-	go main()
+	// Wait for the server to start up
+	var resp *http.Response
+	var err error
+	deadline := time.Now().Add(10 * time.Second)
+	for time.Now().Before(deadline) {
+		resp, err = http.Get("http://localhost:18080/")
+		if err == nil {
+			break
+		}
+		time.Sleep(50 * time.Millisecond)
+	}
+	if err != nil {
+		t.Fatalf("server did not start on GO_PORT: %s", err)
+	}
+	defer func() { _ = resp.Body.Close() }()
 
-	// Restore the original value of GO_PORT
-	os.Setenv("GO_PORT", oldPort)
+	// Assert that the response has a 200 status code
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("Expected status code %d but got %d", http.StatusOK, resp.StatusCode)
+	}
 }
 
-func TestMain(t *testing.T) {
+func TestHomepage(t *testing.T) {
 	// Create a new instance of AppConfig
 	app := &config.AppConfig{}
 
-	// Call the main function with the app instance
-	go main()
-
-	// Wait for the server to start up
-	time.Sleep(1 * time.Second)
-
-	// Make a GET request to the server
+	// Make a GET request to the router
 	w := httptest.NewRecorder()
-	req := httptest.NewRequest("GET", "/", nil)
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	router := routes(app)
 	router.ServeHTTP(w, req)
 
@@ -47,16 +60,5 @@ func TestMain(t *testing.T) {
 	// Assert that the response body is not empty
 	if w.Body.Len() == 0 {
 		t.Errorf("Expected non-empty response body")
-	}
-
-	// Stop the server
-	resp, err := http.DefaultClient.Get("http://localhost:8000")
-	if err != nil {
-		t.Fatalf("Error stopping server: %s", err)
-	}
-	defer resp.Body.Close()
-	// Assert that the response has a 200 status code
-	if resp.StatusCode != http.StatusOK {
-		t.Errorf("Expected status code %d but got %d", http.StatusOK, resp.StatusCode)
 	}
 }
