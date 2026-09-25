@@ -1,0 +1,16 @@
+# Snyk (https://snyk.io) policy file. Must sit next to go.mod for the Snyk
+# GitHub integration to pick it up.
+version: v1.25.1
+ignore:
+  SNYK-GOLANG-GITHUBCOMGOLANGJWTJWT-8341243:
+    - '*':
+        reason: >-
+          False positive. CVE-2024-51744 / GHSA-29wx-vh33-7x7r affects
+          github.com/golang-jwt/jwt (v3) and jwt/v4 <= 4.5.0; v4.5.1 fixed it by
+          back-porting v5's error handling. We only have jwt/v5 v5.3.1 (latest),
+          pulled into the module graph by prometheus/client_golang and
+          prometheus/common, and it is not compiled into the binary
+          (`go list -deps ./...` does not include it). Re-evaluate on expiry.
+        expires: 2026-12-24T00:00:00.000Z
+        created: 2026-09-25T00:00:00.000Z
+patch: {}
