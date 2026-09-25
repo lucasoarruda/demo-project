@@ -5,14 +5,13 @@
 
 name: Trivy
 
+# Scans of freshly built images run in ci.yml (job "trivy", after "build").
+# This workflow only re-scans the deployed :develop image weekly, to catch
+# CVEs disclosed after it was built; it can also be run by hand.
 on:
-  push:
-    branches: [ "develop" ]
-  pull_request:
-    # The branches below must be a subset of the branches above
-    branches: [ "main" ]
   schedule:
     - cron: '42 5 * * 1'
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -37,8 +36,10 @@ jobs:
           format: 'sarif'
           output: 'trivy-results.sarif'
           severity: 'CRITICAL,HIGH'
+          version: 'v0.74.0' # Trivy CLI; the action's default lags behind
 
       - name: Upload Trivy scan results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: 'trivy-results.sarif'
+          category: trivy-image
