@@ -1,10 +1,14 @@
 name: Build and Push
 
+# develop = beta (built, scanned and auto-deployed to the test cluster).
+# main    = stable; promoted from develop by PR (merge commit). PRs into main
+#           are linted/tested/scanned, but main is not rebuilt: values.yaml
+#           carries the sha-<commit> image that already passed beta.
 on:
   push:
     branches: [ develop ]
   pull_request:
-    branches: [ develop ]
+    branches: [ develop, main ]
 
 permissions:
   contents: read
