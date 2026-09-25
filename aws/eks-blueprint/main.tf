@@ -27,7 +27,7 @@ provider "kubectl" {
 }
 
 module "eks_blueprints" {
-  source = "github.com/aws-ia/terraform-aws-eks-blueprints?ref=v4.28.0"
+  source = "github.com/aws-ia/terraform-aws-eks-blueprints?ref=v5.0.0"
 
   cluster_name    = local.name
 
