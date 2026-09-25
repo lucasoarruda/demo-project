@@ -37,17 +37,17 @@ jobs:
     env:
       SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v7
       - name: Set up Snyk CLI to check for security issues
         # Snyk can be used to break the build when it detects security issues.
         # In this case we want to upload the SAST issues to GitHub Code Scanning
-        uses: snyk/actions/setup@806182742461562b67788a64410098c9d9b96adb
+        uses: snyk/actions/setup@9adf32b1121593767fc3c057af55b55db032dc04 # v1.0.0
 
         # For Snyk Open Source you must first set up the development environment for your application's dependencies
         # For example for Node
-        #- uses: actions/setup-node@v3
+        #- uses: actions/setup-node@v7
         #  with:
-        #    node-version: 16
+        #    node-version: lts/*
 
         # Runs Snyk Code (SAST) analysis and uploads result into GitHub.
         # Use || true to not fail the pipeline
@@ -70,6 +70,6 @@ jobs:
 
         # Push the Snyk Code results into GitHub Code Scanning tab
       - name: Upload result to GitHub Code Scanning
-        uses: github/codeql-action/upload-sarif@v2
+        uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: snyk-code.sarif
