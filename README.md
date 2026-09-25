@@ -42,6 +42,7 @@ This project demonstrates how to build and deploy a Golang application to Kubern
 ## Continuous Deployment (CD) to Kubernetes (K8S)
 
 - Helm will be used for deploying the demo project, including services, ingress, HPA, and ServiceMonitor.
+- Deploys are GitOps: after lint, test, image build and Trivy scan pass on `develop`, CI commits the image tag (`sha-<commit>`) to `k8s/demo-project/values.yaml`, and ArgoCD (tracking `develop` with automated sync) rolls it out. Roll back with `git revert` of the `deploy:` commit.
 - ArgoCD will be used to apply the Helm demo project and set up Kong Ingress using AWS NLB.
 - Standalone manifests will be applied, including Karpenter provisioners with spot and consolidation enabled and Certmanager setup.
 - Other tools will be used, including GoldiLocks with auto VPA to reduce costs and Descheduler to rebalance nodes.
