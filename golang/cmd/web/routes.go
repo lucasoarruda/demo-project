@@ -46,7 +46,7 @@ func routes(app *config.AppConfig) *gin.Engine {
 	// set middleware for gin
 	m.Use(router)
 	handlers.Repo = &handlers.Repository{App: app}
-	//v1 := router.Group("/api/v1")
+	// v1 := router.Group("/api/v1")
 	v1 := router.Group("")
 	{
 

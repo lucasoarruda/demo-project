@@ -6,7 +6,7 @@
 ## Project Description
 This project aims to display 3 clocks with different timezones in HTML format using a Golang application. It also provides metrics at /metrics, health check at /health in JSON format and a swagger on /swagger/index.html. Additionally, it displays build time information on the frontend.
 
-The project uses Earthly as a CI tool for building container images for AMD64 and ARM64 and pushing them to GitHub package (ghcr.io). It also enables security scans using Trivy, Snyk, and GitHub.
+The project uses GitHub Actions with Docker Buildx to lint, test, and build container images for AMD64 and ARM64 and push them to GitHub Packages (ghcr.io). It also enables security scans using Trivy, Snyk, and GitHub.
 
 To deploy to Kubernetes, this project uses Helm to deploy the Demo-Project that includes Deployment, Services, Ingress, HPA, and ServiceMonitor. ArgoCD is used to apply the Helm Demo-Project and set up Kong Ingress using AWS NLB. Other tools used in the deployment process include Karpenter provisioners with spot and consolidation enabled, Certmanager setup, GoldiLocks for auto VPA to reduce costs, and Descheduler to rebalance nodes.
 
@@ -15,13 +15,13 @@ For infrastructure management, this project uses Terraform on AWS to create a VP
 ## Getting Started
 Use Terraform to manage the infrastructure on AWS and create a VPC, EKS cluster, and install EKS and other add-ons.
 
-To run this application, you will need to install GitHub Actions, Earthly for the CI process, Helm and ArgoCD for deploying to Kubernetes, and Terraform for infrastructure management on AWS.
+To run this application, you will need to install GitHub Actions and Docker (Buildx) for the CI process, Helm and ArgoCD for deploying to Kubernetes, and Terraform for infrastructure management on AWS.
 
 Next, deploy the Helm Demo-Project using ArgoCD and set up Kong Ingress using AWS NLB. 
 Extras: Apply standalone manifests for Karpenter provisioners with spot and consolidation enabled, Certmanager Setup, GoldiLocks for auto VPA, and Descheduler to rebalance nodes.
 
 Conclusion
-This project demonstrates how to build and deploy a Golang application to Kubernetes using various tools such as Earthly, Helm, ArgoCD, and Terraform. It also provides examples of using Kubernetes add-ons such as Karpenter, Certmanager, and GoldiLocks to manage and optimize the cluster.
+This project demonstrates how to build and deploy a Golang application to Kubernetes using various tools such as Docker, Helm, ArgoCD, and Terraform. It also provides examples of using Kubernetes add-ons such as Karpenter, Certmanager, and GoldiLocks to manage and optimize the cluster.
 
 # Specs:
 
@@ -34,7 +34,8 @@ This project demonstrates how to build and deploy a Golang application to Kubern
 
 ## Continuous Integration (CI)
 
-- The project will use Earthly to build container images for AMD64 and ARM64 architectures and push them to GitHub Packages (ghcr.io).
+- The project uses a multi-stage `Dockerfile` built with Docker Buildx to produce AMD64 and ARM64 images and push them to GitHub Packages (ghcr.io).
+- Go code is linted with golangci-lint v2 (`golang/.golangci.yml`); `//nolint` directives are rejected by CI.
 - Container images are built on Wolfi: `cgr.dev/chainguard/go` for the build stage and the distroless `cgr.dev/chainguard/static` (non-root) for runtime.
 - Security scans will be enabled using Trivy, Snyk, and GitHub.
 

@@ -1,0 +1,7 @@
+*
+!golang/
+golang/compile/
+golang/main
+golang/.vscode/
+golang/.dccache
+golang/coverage.html

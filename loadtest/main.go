@@ -41,7 +41,7 @@ func main() {
 					fmt.Println("Error making request:", err)
 					continue
 				}
-				resp.Body.Close()
+				_ = resp.Body.Close()
 				elapsed := time.Since(start)
 				responses <- elapsed
 			}
