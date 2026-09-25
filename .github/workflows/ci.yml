@@ -1,10 +1,14 @@
 name: Build and Push
 
+# develop = beta (built, scanned and auto-deployed to the test cluster).
+# main    = stable; promoted from develop by PR (merge commit). PRs into main
+#           are linted/tested/scanned, but main is not rebuilt: values.yaml
+#           carries the sha-<commit> image that already passed beta.
 on:
   push:
     branches: [ develop ]
   pull_request:
-    branches: [ main ]
+    branches: [ develop, main ]
 
 permissions:
   contents: read
@@ -54,6 +58,8 @@ jobs:
   build:
     needs: [lint, test]
     runs-on: ubuntu-latest
+    outputs:
+      image: ${{ steps.ref.outputs.image }}
     permissions:
       contents: read
       packages: write
@@ -83,6 +89,7 @@ jobs:
       id: vars
       run: echo "short_sha=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
     - name: Build and push
+      id: push
       uses: docker/build-push-action@v7
       with:
         context: .
@@ -94,3 +101,79 @@ jobs:
           GIT_COMMIT=${{ steps.vars.outputs.short_sha }}
         cache-from: type=gha
         cache-to: type=gha,mode=max
+    - name: Image reference for scanning
+      id: ref
+      run: echo "image=${REGISTRY}/${IMAGE_NAME}@${{ steps.push.outputs.digest }}" >> "$GITHUB_OUTPUT"
+
+  # Scans the exact image digest this run just pushed, so it can never race
+  # the push or pick up an older/newer :develop. trivy.yml keeps the weekly
+  # rescan of :develop for newly disclosed CVEs.
+  trivy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write # upload-sarif
+      actions: read          # upload-sarif on private repos
+    steps:
+    - uses: actions/checkout@v7 # upload-sarif expects the repo checked out
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0 (SHA-pinned after the 2026 tag compromise)
+      with:
+        image-ref: ${{ needs.build.outputs.image }}
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+        severity: 'CRITICAL,HIGH'
+        version: 'v0.74.0' # Trivy CLI; the action's default lags behind
+    - name: Upload Trivy scan results to GitHub Security tab
+      uses: github/codeql-action/upload-sarif@v4
+      with:
+        sarif_file: 'trivy-results.sarif'
+        category: trivy-image
+
+  # GitOps deploy: pin the image this run built and scanned in the Helm chart,
+  # so ArgoCD (which tracks develop with automated sync) rolls it out. A
+  # floating :develop tag never changes in git, so ArgoCD would never notice.
+  deploy:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
+    needs: [build, trivy]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # commit the new tag to develop
+    concurrency:
+      group: deploy-develop
+      cancel-in-progress: false
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        ref: develop
+        fetch-depth: 50
+    - name: Pin image tag in the Helm chart
+      run: |
+        TAG="sha-${GITHUB_SHA::7}" # same tag docker/metadata-action pushed
+        git config user.name "github-actions[bot]"
+        git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        for attempt in 1 2 3; do
+          # Never roll back: if develop has a newer (non-deploy) commit, its
+          # own run deploys it.
+          latest=$(git log --format=%H --invert-grep --grep='^deploy: ' -1)
+          if [ "$latest" != "$GITHUB_SHA" ]; then
+            echo "develop moved on to $latest; skipping deploy of $TAG."
+            exit 0
+          fi
+          sed -i -E "s|^(  tag: ).*|\1\"${TAG}\"|" k8s/demo-project/values.yaml
+          if git diff --quiet; then
+            echo "values.yaml already pins $TAG."
+            exit 0
+          fi
+          git commit -qam "deploy: ${TAG} [skip ci]"
+          # Pushes made with GITHUB_TOKEN do not trigger workflows, so no loop.
+          if git push origin HEAD:develop; then
+            echo "Pinned $TAG; ArgoCD will sync it."
+            exit 0
+          fi
+          git reset -q --hard HEAD~1
+          git pull -q --rebase origin develop
+        done
+        echo "::error::could not push the deploy commit after 3 attempts"
+        exit 1

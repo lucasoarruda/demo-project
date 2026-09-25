@@ -1,14 +1,20 @@
-project: default
-source:
-  repoURL: 'https://github.com/lucasoarruda/demo-project/'
-  path: k8s/demo-project
-  targetRevision: develop
-destination:
-  namespace: demo-project
-  name: demo-project
-syncPolicy:
-  automated:
-    prune: true
-    selfHeal: true
-  syncOptions:
-    - CreateNamespace=true
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: demoproject
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: 'https://github.com/lucasoarruda/demo-project/'
+    path: k8s/demo-project
+    targetRevision: develop
+  destination:
+    namespace: demo-project
+    name: in-cluster
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

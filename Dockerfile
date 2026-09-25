@@ -24,7 +24,7 @@ RUN --mount=type=cache,target=/go/pkg/mod \
 ARG TARGETOS
 ARG TARGETARCH
 ARG TARGETVARIANT
-ARG VERSION=v0.0.3
+ARG VERSION=v0.0.4
 ARG GIT_COMMIT=unknown
 RUN --mount=type=cache,target=/go/pkg/mod \
     --mount=type=cache,target=/root/.cache/go-build \
