@@ -17,7 +17,7 @@ func TestStatus(t *testing.T) {
 	router.GET("/health", Repo.Status)
 
 	// Create a new HTTP request
-	req, err := http.NewRequest("GET", "/health", nil)
+	req, err := http.NewRequest(http.MethodGet, "/health", nil)
 	if err != nil {
 		t.Fatal(err)
 	}

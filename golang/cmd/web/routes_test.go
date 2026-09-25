@@ -29,7 +29,7 @@ func TestRoutes(t *testing.T) {
 	for _, path := range paths {
 		// Create a new HTTP request and record the response
 		w := httptest.NewRecorder()
-		req := httptest.NewRequest("GET", path, nil)
+		req := httptest.NewRequest(http.MethodGet, path, nil)
 
 		// Call the router with the request and recorder
 		router.ServeHTTP(w, req)
