@@ -1,0 +1,282 @@
+#!/usr/bin/env python3
+"""
+bump-check: Weekly Go toolchain + dep bump and gate validation script.
+Step 1 of the weekly maintenance pipeline.
+
+Runs against a clean worktree of develop (never the shared clone, never main):
+1. Fetches the latest stable Go release from https://go.dev/dl/?mode=json.
+2. Detects current Go versions: `go`/`toolchain` directives in go.mod files,
+   Go base image tags in Dockerfiles, `go-version:`/`go-version-file:` in
+   .github/workflows/*.
+3. Attempts minor/patch dep bumps: `go get -u ./... && go mod tidy`.
+4. Runs the green gate with the new toolchain: gofmt -l ., go vet ./...,
+   golangci-lint run, go test -race ./...
+5. Exit contract: 0 = green (bump safe, bump-report.json written with
+   gate: pass); non-zero = red (report carries `PIN: <go|module> @ <version>
+   <reason>` lines plus gate log paths).
+6. Major-version modules (v2+ module-path changes) are report-only
+   (`MAJOR: module current -> latest` lines), never attempted; they route to
+   code-go as individual cards.
+
+The script NEVER pushes, NEVER opens PRs, NEVER touches main.
+
+Network calls: go.dev/dl JSON, the Go module proxy (proxy.golang.org), and
+nothing else.
+
+Env: BUMP_CHECK_SKIP_RACE=1 substitutes `go test ./...` for `go test -race
+./...` (documented escape hatch for hosts whose Go toolchain cannot link the
+race runtime, e.g. distro builds without TSAN support).
+"""
+
+import json
+import os
+import re
+import subprocess
+import sys
+import urllib.error
+import urllib.request
+from typing import Any
+
+GO_DL_URL = "https://go.dev/dl/?mode=json"
+PROXY_BASE = "https://proxy.golang.org"
+
+
+def run_cmd(
+    cmd: list[str], cwd: str | None = None, env: dict[str, str] | None = None
+) -> tuple[int, str, str]:
+    """Run cmd, return (returncode, stdout, stderr). Never raises."""
+    merged = os.environ.copy()
+    if env:
+        merged.update(env)
+    try:
+        res = subprocess.run(
+            cmd, cwd=cwd, env=merged, capture_output=True, text=True, check=False
+        )
+        return res.returncode, res.stdout, res.stderr
+    except OSError as e:
+        return 1, "", str(e)
+
+
+def get_latest_go() -> str:
+    try:
+        req = urllib.request.Request(GO_DL_URL)
+        with urllib.request.urlopen(req) as response:
+            releases = json.loads(response.read().decode())
+        stable = next(r for r in releases if r.get("stable", False))
+        return stable["version"].lstrip("go")
+    except (OSError, ValueError, StopIteration) as e:
+        sys.stderr.write(f"FATAL: could not fetch latest Go from {GO_DL_URL}: {e}\n")
+        sys.exit(2)
+
+
+def detect_versions(repo_root: str) -> dict[str, Any]:
+    versions: dict[str, Any] = {"go.mod": [], "Dockerfile": [], "github_workflows": []}
+
+    for root, _dirs, files in os.walk(repo_root):
+        if ".git" in root.split(os.sep):
+            continue
+        if "go.mod" in files:
+            path = os.path.join(root, "go.mod")
+            with open(path) as fh:
+                content = fh.read()
+            go_ver = re.search(r"^go\s+(\d+\.\d+(?:\.\d+)?)", content, re.MULTILINE)
+            tc_ver = re.search(
+                r"^toolchain\s+go(\d+\.\d+(?:\.\d+)?)", content, re.MULTILINE
+            )
+            versions["go.mod"].append(
+                {
+                    "path": os.path.relpath(path, repo_root),
+                    "go": go_ver.group(1) if go_ver else None,
+                    "toolchain": tc_ver.group(1) if tc_ver else None,
+                }
+            )
+        if "Dockerfile" in files:
+            path = os.path.join(root, "Dockerfile")
+            with open(path) as fh:
+                matches = re.findall(
+                    r"FROM\s+(?:--platform=\S+\s+)?(\S*go\S*:\S+)", fh.read()
+                )
+            if matches:
+                versions["Dockerfile"].append(
+                    {
+                        "path": os.path.relpath(path, repo_root),
+                        "tags": matches,
+                    }
+                )
+
+    wf_dir = os.path.join(repo_root, ".github", "workflows")
+    if os.path.isdir(wf_dir):
+        for filename in sorted(os.listdir(wf_dir)):
+            if not filename.endswith((".yml", ".yaml")):
+                continue
+            path = os.path.join(wf_dir, filename)
+            with open(path) as fh:
+                content = fh.read()
+            matches = re.findall(r"go-version(?:-file)?:\s*(\S+)", content)
+            if matches:
+                versions["github_workflows"].append(
+                    {"file": filename, "versions": sorted(set(matches))}
+                )
+
+    return versions
+
+
+def get_major_from_path(module_path: str) -> int:
+    m = re.search(r"/v(\d+)$", module_path)
+    return int(m.group(1)) if m else 1
+
+
+def check_next_major(
+    module_path: str, current_major: int
+) -> tuple[str | None, str | None]:
+    """Probe the module proxy for a stable release of the next major version.
+
+    gopkg.in / go.yaml.in paths use a different proxy layout; skip them.
+    """
+    if "gopkg.in" in module_path or "go.yaml.in" in module_path:
+        return None, None
+
+    next_m = current_major + 1
+    if current_major <= 1:
+        probe = f"{module_path}/v2"
+    else:
+        probe = f"{re.sub(r'/v\d+$', '', module_path)}/v{next_m}"
+
+    url = f"{PROXY_BASE}/{probe}/@v/list"
+    try:
+        req = urllib.request.Request(url)
+        with urllib.request.urlopen(req) as response:
+            versions = response.read().decode().strip().split("\n")
+        stable = [v for v in versions if v and "-" not in v]
+        if stable:
+            return probe, stable[-1]
+    except OSError:
+        pass
+    return None, None
+
+
+def get_deps(cwd: str) -> dict[str, str]:
+    rc, out, _err = run_cmd(["go", "list", "-m", "all"], cwd=cwd)
+    if rc != 0:
+        return {}
+    deps = {}
+    for line in out.strip().split("\n"):
+        parts = line.split()
+        if len(parts) >= 2:
+            deps[parts[0]] = parts[1]
+    return deps
+
+
+def gate_steps() -> list[tuple[str, list[str]]]:
+    race = ["go", "test", "-race", "./..."]
+    plain = ["go", "test", "./..."]
+    return [
+        ("gofmt", ["gofmt", "-l", "."]),
+        ("vet", ["go", "vet", "./..."]),
+        ("lint", ["golangci-lint", "run"]),
+        ("test", plain if os.environ.get("BUMP_CHECK_SKIP_RACE") == "1" else race),
+    ]
+
+
+def main() -> None:
+    repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    latest_go = get_latest_go()
+    print(f"[*] Latest stable Go: {latest_go}")
+    current_versions = detect_versions(repo_root)
+
+    dep_diff: dict[str, list[str]] = {}
+    pins: list[str] = []
+    majors: list[str] = []
+    log_files: list[str] = []
+    gate_pass = True
+
+    env_overlay = {"GOTOOLCHAIN": f"go{latest_go}"}
+    if "GOPATH" not in os.environ:
+        env_overlay["GOPATH"] = os.path.expanduser("~/go")
+    if "GOMODCACHE" not in os.environ:
+        env_overlay["GOMODCACHE"] = os.path.join(
+            env_overlay.get("GOPATH", os.path.expanduser("~/go")), "pkg", "mod"
+        )
+
+    for mod in ["golang", "loadtest"]:
+        mod_dir = os.path.join(repo_root, mod)
+        if not os.path.isdir(mod_dir):
+            continue
+
+        before_deps = get_deps(mod_dir)
+        rc, _out, err = run_cmd(
+            ["go", "get", "-u", "./..."], cwd=mod_dir, env=env_overlay
+        )
+        get_ok = rc == 0
+        if not get_ok:
+            print(f"ERROR: go get -u failed in {mod}:\n{err}")
+        run_cmd(["go", "mod", "tidy"], cwd=mod_dir, env=env_overlay)
+        after_deps = get_deps(mod_dir)
+
+        # (path, old, new) triples for pin lines
+        bumps = [
+            (d, old, new)
+            for d, old in before_deps.items()
+            if (new := after_deps.get(d)) and new != old
+        ]
+        if bumps:
+            dep_diff[mod] = [f"{d}: {old} -> {new}" for d, old, new in bumps]
+
+        for d, cv in after_deps.items():
+            if "github.com/lucasoarruda/demo-project" in d:
+                continue
+            np, nv = check_next_major(d, get_major_from_path(d))
+            if np:
+                majors.append(f"MAJOR: {d} {cv} -> {np} {nv}")
+
+        if not get_ok:
+            gate_pass = False
+            pins.append(f"PIN: module {mod} @ previous go get -u failed: see report")
+            continue
+
+        print(f"[*] Gate for {mod}...")
+        failed_steps: list[str] = []
+        for step, cmd in gate_steps():
+            rc, cmd_out, cmd_err = run_cmd(cmd, cwd=mod_dir, env=env_overlay)
+            output = cmd_out + cmd_err
+            step_failed = rc != 0 or (step == "gofmt" and cmd_out.strip())
+            if step_failed:
+                failed_steps.append(step)
+                lp = os.path.join(repo_root, f"{mod}_{step}_gate.log")
+                with open(lp, "w") as fh:
+                    fh.write(output)
+                log_files.append(os.path.relpath(lp, repo_root))
+        if failed_steps:
+            gate_pass = False
+            reason = "gate failed: " + ", ".join(failed_steps)
+            for d, old, new in bumps:
+                pins.append(f"PIN: module {d} @ {old} {reason} (after bump to {new})")
+
+    report: dict[str, Any] = {
+        "latest_go": latest_go,
+        "current_versions": current_versions,
+        "dep_diff": dep_diff,
+        "gate": "pass" if gate_pass else "fail",
+    }
+    if log_files:
+        report["gate_logs"] = log_files
+    if pins:
+        report["pins"] = sorted(set(pins))
+    if majors:
+        report["majors"] = sorted(set(majors))
+
+    rp = os.path.join(repo_root, "bump-report.json")
+    with open(rp, "w") as fh:
+        json.dump(report, fh, indent=2)
+
+    print(f"[*] Report written to {rp}")
+    for pin in report.get("pins", []):
+        print(pin)
+    for m in report.get("majors", []):
+        print(m)
+
+    sys.exit(0 if gate_pass else 1)
+
+
+if __name__ == "__main__":
+    main()

@@ -52,3 +52,26 @@ This project demonstrates how to build and deploy a Golang application to Kubern
 
 - Terraform will be used for managing the infrastructure on AWS.
 - The project will use eks-blueprints as the base and will create a VPC and related resources, an EKS cluster, and install EKS addons and other addons, including amazon_eks_coredns, amazon_eks_kube_proxy, amazon_eks_vpc_cni, karpenter, aws_load_balancer_controller, and metrics_server.
+## Maintenance
+
+### Weekly Bump Check
+
+The script `scripts/bump-check` automates weekly maintenance of the Go toolchain and dependencies. It:
+1. Discovers the latest stable Go version from `go.dev/dl`.
+2. Emits a manifest of all current Go toolchain references across the repository.
+3. Automatically applies minor and patch dependency bumps to all modules.
+4. Executes a full CI gate check (`gofmt`, `vet`, `golangci-lint`, `go test -race`).
+5. Audits the module proxy to discover major version updates available for Code-Go evaluation.
+
+**Usage:**
+```bash
+$ ./scripts/bump-check
+```
+
+**Exit Codes:**
+- `0` - Gate succeeded. The branch is clean and safely bumpable.
+- `1` - Gate failed or process error.
+
+**Outputs:**
+- `bump-report.json`: Detailed JSON manifest containing the detected toolchain references, dependency diffs, and uncovered major version updates.
+- `{module}_{step}_gate.log`: Generated upon gate failure indicating exactly where the gate broke.
