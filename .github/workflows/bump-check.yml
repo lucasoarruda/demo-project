@@ -1,0 +1,79 @@
+# Weekly dependency/Go-version drift check on develop (step 2 of the weekly
+# maintenance pipeline; script itself lives in scripts/bump-check).
+#   exit 0   -> GREEN: report in the job summary only. No PR, no push, no card.
+#   exit !=0 -> RED:   PIN: lines + gate log tails in the job summary and a
+#               failed run. Card/room routing is NOT part of this workflow and
+#               is not activated by it (separate, unapproved integration).
+# Deliberately read-only: contents:read and no other permissions, so the
+# scheduled job structurally cannot push or open PRs. Bump commits stay
+# manual in code-go's hands.
+name: bump-check
+
+on:
+  schedule:
+    - cron: '0 9 * * 1'  # Mondays 09:00 UTC
+  workflow_dispatch: {}   # manual run for wiring verification
+
+permissions:
+  contents: read
+
+concurrency:
+  group: bump-check
+  cancel-in-progress: false
+
+jobs:
+  bump-check:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout develop tip
+      uses: actions/checkout@v7
+      with:
+        ref: develop
+        persist-credentials: false   # nothing later in this job may push
+
+    - name: Set up Go
+      uses: actions/setup-go@v7
+      with:
+        go-version-file: golang/go.mod
+        cache-dependency-path: golang/go.sum
+
+    # scripts/bump-check runs `golangci-lint run`, which ubuntu-latest does not
+    # ship. Same pinned version as ci.yml; install only, the script runs it.
+    - name: Install golangci-lint
+      uses: golangci/golangci-lint-action@v9
+      with:
+        version: v2.14.0
+        install-only: true
+
+    - name: Run bump-check
+      run: scripts/bump-check
+
+    # The script writes bump-report.json and <module>_<step>_gate.log in the
+    # repository root (not golang/).
+    - name: Green summary
+      if: success()
+      run: |
+        {
+          echo "## bump-check GREEN ✅"
+          echo 'Gate passed. MAJOR: lines (if any) are report-only.'
+          echo '```'
+          cat bump-report.json 2>/dev/null || true
+          echo '```'
+        } >> "$GITHUB_STEP_SUMMARY"
+
+    - name: Red summary
+      if: failure()
+      run: |
+        {
+          echo "## bump-check RED 🚨"
+          echo 'Pins / gate failures below. This workflow does not create cards.'
+          echo '```'
+          cat bump-report.json 2>/dev/null || true
+          for f in ./*_gate.log; do
+            [ -f "$f" ] || continue
+            echo "--- $f (last 40 lines)"
+            tail -n 40 "$f"
+          done
+          echo '```'
+        } >> "$GITHUB_STEP_SUMMARY"
+        exit 1
