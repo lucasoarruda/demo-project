@@ -24,3 +24,13 @@ updates:
     schedule:
       interval: "weekly"
     target-branch: "develop"
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    target-branch: "develop"
+  - package-ecosystem: "helm"
+    directory: "/k8s/demo-project"
+    schedule:
+      interval: "weekly"
+    target-branch: "develop"
