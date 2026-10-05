@@ -35,7 +35,10 @@ securityContext:
     drop:
     - ALL
   readOnlyRootFilesystem: true
-  #runAsNonRoot: true
+  runAsNonRoot: true
+  allowPrivilegeEscalation: false
+  seccompProfile:
+    type: RuntimeDefault
 
 service:
   type: ClusterIP
