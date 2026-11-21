@@ -78,7 +78,7 @@ module "eks_blueprints" {
 
 module "vpc" {
   source  = "terraform-aws-modules/vpc/aws"
-  version = "4.0.1"
+  version = "6.8.0"
   #version = "3.16.0"
 
   name = local.name
